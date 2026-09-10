@@ -1,13 +1,13 @@
 name: deploy
 
 on:
-  push:
-    tags:
-    - '*'
+  workflow_dispatch:
 
 jobs:
 
   documents:
+    if: false
+    timeout-minutes: 15
     strategy:
       max-parallel: 4
       matrix:
@@ -38,18 +38,22 @@ jobs:
 
   pypi:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.9
-      - name: Package
+          python-version: 3.11
+      - name: Install build backend
         run: |
-          pip install --upgrade build
-          python -m build -s -w
-      - name: Publish
-        uses: pypa/gh-action-pypi-publish@release/v1
+          python -m pip install --upgrade build "hatchling==1.14.0"
+          python -c "import site; from pathlib import Path; Path(site.getsitepackages()[0], 'sitecustomize.py').write_text('import importlib.util\n')"
+      - name: Package
+        run: python -m build --no-isolation -s -w
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+          name: soupsieve-distributions
+          path: dist/*
+          if-no-files-found: error
