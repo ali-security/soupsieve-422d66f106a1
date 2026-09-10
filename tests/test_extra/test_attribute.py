@@ -1,4 +1,7 @@
 """Test attribute selectors."""
+import subprocess
+import sys
+
 from .. import util
 
 
@@ -50,3 +53,17 @@ class TestAttribute(util.TestCase):
             ["div", "0", "1", "2", "3", "pre", "4", "6"],
             flags=util.HTML5
         )
+
+    def test_bad_attribute_unclosed(self):
+        """Test bad attribute fails for syntax error, not timeout error."""
+
+        code = (
+            "import soupsieve as sv\n"
+            "try:\n"
+            "    sv.compile('[a=\"' + ('x' * 300))\n"
+            "except sv.SelectorSyntaxError:\n"
+            "    pass\n"
+            "else:\n"
+            "    raise SystemExit(1)\n"
+        )
+        subprocess.run([sys.executable, "-c", code], check=True, timeout=3)
